@@ -26,7 +26,7 @@ export default function HealthCheck() {
   return (
     <Stack spacing={2}>
       <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-        <Typography variant="h6">API 联通状态</Typography>
+        <Typography variant="h6">系统状态</Typography>
         <Button variant="outlined" size="small" onClick={loadHealth} disabled={loading}>
           重新检查
         </Button>

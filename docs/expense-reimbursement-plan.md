@@ -474,24 +474,24 @@ OFD 是 ZIP 压缩包，解压后解析内部 XML 获取字段。
 ### Phase 1：项目初始化
 **验收标准：前后端均可启动，数据库自动创建，API 联通正常**
 
-- [ ] 初始化 React + Vite + MUI 前端项目
-- [ ] 初始化 FastAPI 后端，建立分层目录结构
-- [ ] 配置 SQLite + SQLAlchemy，自动创建全部数据表
-- [ ] 实现 `schemas/common.py` 统一响应格式
-- [ ] 配置 CORS
-- [ ] 前端配置 Axios，指向 `http://localhost:8000`
-- [ ] 编写健康检查接口 `GET /api/health`，前端调用验证联通
+- [x] 初始化 React + Vite + MUI 前端项目
+- [x] 初始化 FastAPI 后端，建立分层目录结构
+- [x] 配置 SQLite + SQLAlchemy，自动创建全部数据表
+- [x] 实现 `schemas/common.py` 统一响应格式
+- [x] 配置 CORS
+- [x] 前端配置 Axios，指向 `http://localhost:8000`
+- [x] 编写健康检查接口 `GET /api/health`，前端调用验证联通
 
 ---
 
 ### Phase 2：报销单 CRUD + 列表页
 **验收标准：可新增、编辑、删除报销单，列表页正常展示和分页**
 
-- [ ] `GET/PUT /api/settings` 接口 + Service
-- [ ] 报销单全部 CRUD 接口 + Service（含状态机校验）
-- [ ] 报销单列表页（ReportList），含状态 Tab 筛选
-- [ ] 新增/编辑报销单 Step 1（基本信息）
-- [ ] 单元测试：状态机合法/非法转换
+- [x] `GET/PUT /api/settings` 接口 + Service
+- [x] 报销单全部 CRUD 接口 + Service（含状态机校验）
+- [x] 报销单列表页（ReportList），含状态 Tab 筛选
+- [x] 新增/编辑报销单 Step 1（基本信息）
+- [x] 单元测试：状态机合法/非法转换
 
 ---
 
@@ -512,11 +512,11 @@ OFD 是 ZIP 压缩包，解压后解析内部 XML 获取字段。
 ### Phase 4：PDF 生成
 **验收标准：生成 PDF 可下载，多页分割正确，所有金额精确到两位小数，中文大写正确**
 
-- [ ] `amount_converter.py`：金额转中文大写，含单元测试
-- [ ] `pdf_generator.py`：PDF 模板填充，多页逻辑
-- [ ] `GET /api/reports/{id}/pdf` 接口
-- [ ] 前端「生成PDF」按钮 + 浏览器下载触发
-- [ ] 单元测试：中文大写转换全场景，Decimal 精度验证
+- [x] `amount_formatter.py`：金额转中文大写，含单元测试
+- [x] `pdf_generator.py`：PDF 模板填充，多页逻辑
+- [x] `GET /api/reports/{id}/pdf` 接口
+- [x] 前端「生成PDF」按钮 + 浏览器下载触发
+- [x] 单元测试：中文大写转换全场景，Decimal 精度验证
 
 ---
 

@@ -4,11 +4,16 @@ from fastapi import APIRouter, Depends, File, Form, Path, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
-from backend.database.connection import PROJECT_ROOT
 from backend.database.session import get_db
 from backend.schemas.common import ApiResponse
 from backend.schemas.invoice import InvoiceRead, InvoiceUpdate, InvoiceUploadResult
-from backend.services.invoice_service import get_invoice_or_404, soft_delete_invoice, update_invoice, upload_invoice
+from backend.services.invoice_service import (
+    get_invoice_or_404,
+    resolve_invoice_file_path,
+    soft_delete_invoice,
+    update_invoice,
+    upload_invoice,
+)
 
 router = APIRouter(prefix="/api/invoices", tags=["invoices"])
 
@@ -31,8 +36,7 @@ def get_invoice_file(
     db: Session = Depends(get_db),
 ) -> FileResponse:
     invoice = get_invoice_or_404(db, invoice_id)
-    file_path = PROJECT_ROOT / "backend" / invoice.file_path
-    return FileResponse(file_path)
+    return FileResponse(resolve_invoice_file_path(invoice.file_path))
 
 
 @router.put("/{invoice_id}", response_model=ApiResponse[InvoiceRead])

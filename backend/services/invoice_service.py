@@ -17,6 +17,10 @@ UPLOAD_ROOT = PROJECT_ROOT / "backend" / "uploads"
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".gif", ".webp"}
 
 
+def resolve_invoice_file_path(relative_path: str | Path) -> Path:
+    return UPLOAD_ROOT.parent / Path(relative_path)
+
+
 def detect_file_type(filename: str) -> str:
     ext = Path(filename).suffix.lower()
     if ext == ".xml":
@@ -47,7 +51,7 @@ def save_upload_file(upload_file: UploadFile, report_id: int, file_type: str) ->
     upload_dir = UPLOAD_ROOT / str(report_id)
     upload_dir.mkdir(parents=True, exist_ok=True)
     relative_path = Path("uploads") / str(report_id) / f"invoice_{uuid4().hex}{ext}"
-    absolute_path = PROJECT_ROOT / "backend" / relative_path
+    absolute_path = resolve_invoice_file_path(relative_path)
     with absolute_path.open("wb") as target:
         shutil.copyfileobj(upload_file.file, target)
     return relative_path.as_posix()
@@ -66,9 +70,8 @@ def upload_invoice(
 
     file_type = detect_file_type(upload_file.filename or "")
     relative_path = save_upload_file(upload_file, report_id, file_type)
-    absolute_path = PROJECT_ROOT / "backend" / relative_path
     try:
-        parsed = parse_invoice_file(absolute_path, file_type)
+        parsed = parse_invoice_file(resolve_invoice_file_path(relative_path), file_type)
     except Exception as exc:
         parsed = InvoiceParsedData(raw={"source": file_type, "parse_error": str(exc)})
 

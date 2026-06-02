@@ -53,9 +53,17 @@ def _active_confirmed_invoices(report: ExpenseReport):
     return [invoice for invoice in report.invoices if invoice.deleted_at is None and invoice.amount_confirmed]
 
 
-def _build_field_values(report: ExpenseReport) -> dict[str, str]:
+def _chunked_trips(trips: list, size: int) -> list[list]:
+    if not trips:
+        return [[]]
+    return [trips[index : index + size] for index in range(0, len(trips), size)]
+
+
+def _build_field_values(report: ExpenseReport, trip_rows: list | None = None) -> dict[str, str]:
     invoices = _active_confirmed_invoices(report)
     trips = sorted(report.trips, key=lambda item: item.sort_order)
+    visible_trips = trips if trip_rows is None else trip_rows
+    transport_invoices = [invoice for invoice in invoices if invoice.expense_category == "transport_fare"]
     values: dict[str, str] = {
         "department": _plain(report.department),
         "employee_name": _plain(report.employee_name),
@@ -74,17 +82,15 @@ def _build_field_values(report: ExpenseReport) -> dict[str, str]:
         "surplus": _money(report.surplus, blank_zero=True),
     }
 
-    transport_count = 0
-    transport_total = Decimal("0.00")
-    for row, trip in enumerate(trips[:MAX_TRIP_ROWS], start=1):
+    transport_count = len(transport_invoices)
+    transport_total = sum((invoice.amount for invoice in transport_invoices), Decimal("0.00"))
+    for row, trip in enumerate(visible_trips[:MAX_TRIP_ROWS], start=1):
         trip_invoices = [
             invoice
             for invoice in invoices
             if invoice.expense_category == "transport_fare" and invoice.trip_id == trip.id
         ]
         trip_amount = sum((invoice.amount for invoice in trip_invoices), Decimal("0.00"))
-        transport_count += len(trip_invoices)
-        transport_total += trip_amount
         values.update(
             {
                 f"depart_month_{row}": _plain(trip.depart_month),
@@ -207,17 +213,20 @@ def generate_report_pdf(report: ExpenseReport) -> bytes:
     if not FIELD_TEMPLATE_PATH.exists():
         raise FileNotFoundError(f"报销单填表域模板不存在：{FIELD_TEMPLATE_PATH}")
 
-    base_reader = PdfReader(str(BASE_TEMPLATE_PATH))
     field_rects = _field_rects(FIELD_TEMPLATE_PATH)
-    page = base_reader.pages[0]
-    page_width = float(page.mediabox.width)
-    page_height = float(page.mediabox.height)
-    overlay_buffer = _build_overlay(page_width, page_height, field_rects, _build_field_values(report))
-    overlay_reader = PdfReader(overlay_buffer)
+    trips = sorted(report.trips, key=lambda item: item.sort_order)
+    trip_pages = _chunked_trips(trips, MAX_TRIP_ROWS)
 
     writer = PdfWriter()
-    page.merge_page(overlay_reader.pages[0])
-    writer.add_page(page)
+    for trip_rows in trip_pages:
+        base_reader = PdfReader(str(BASE_TEMPLATE_PATH))
+        page = base_reader.pages[0]
+        page_width = float(page.mediabox.width)
+        page_height = float(page.mediabox.height)
+        overlay_buffer = _build_overlay(page_width, page_height, field_rects, _build_field_values(report, trip_rows))
+        overlay_reader = PdfReader(overlay_buffer)
+        page.merge_page(overlay_reader.pages[0])
+        writer.add_page(page)
 
     output = BytesIO()
     writer.write(output)
