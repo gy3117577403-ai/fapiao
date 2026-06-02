@@ -83,6 +83,25 @@ const formatAmount = (value) =>
 
 const toMoney = (value) => Number(value || 0).toFixed(2);
 
+const activeInvoices = (items = []) => items.filter((invoice) => !invoice.deleted_at);
+
+const summarizeInvoiceGroup = (items = []) => {
+  const active = activeInvoices(items);
+  const confirmed = active.filter((invoice) => invoice.amount_confirmed);
+  return {
+    amount: confirmed.reduce((sum, invoice) => sum + Number(invoice.amount || 0), 0),
+    confirmedCount: confirmed.length,
+    invoiceCount: active.length,
+    pendingCount: active.length - confirmed.length,
+  };
+};
+
+const invoiceAmountLabel = (invoice) => {
+  const amount = Number(invoice?.amount || 0);
+  if (!invoice?.amount_confirmed && amount <= 0) return "金额待确认";
+  return formatAmount(amount);
+};
+
 const normalizeTrip = (trip, index) => ({
   id: trip.id ?? null,
   sort_order: index + 1,
@@ -174,6 +193,11 @@ export default function ReportEdit() {
 
   const readonly = status === "reimbursed";
 
+  const pendingInvoiceCount = useMemo(
+    () => activeInvoices(invoices).filter((invoice) => !invoice.amount_confirmed).length,
+    [invoices],
+  );
+
   const loadForEdit = useCallback(
     async ({ quiet = false } = {}) => {
       if (!quiet) setLoading(true);
@@ -239,7 +263,7 @@ export default function ReportEdit() {
   const summary = useMemo(() => {
     const subsidyDays = calculateSubsidyDays(form.report_date, trips);
     const subsidyTotal = subsidyDays * Number(form.daily_subsidy || 0);
-    const confirmedInvoices = invoices.filter((invoice) => invoice.amount_confirmed);
+    const confirmedInvoices = activeInvoices(invoices).filter((invoice) => invoice.amount_confirmed);
     const invoiceTotal = confirmedInvoices.reduce((sum, invoice) => sum + Number(invoice.amount || 0), 0);
     const otherFeeTotal = confirmedInvoices
       .filter((invoice) => invoice.expense_category !== "transport_fare")
@@ -382,8 +406,9 @@ export default function ReportEdit() {
     markDirty();
   };
 
-  const invoicesForTrip = (tripId) => invoices.filter((invoice) => invoice.trip_id === tripId);
-  const invoicesForCategory = (category) => invoices.filter((invoice) => invoice.expense_category === category && !invoice.trip_id);
+  const invoicesForTrip = (tripId) => activeInvoices(invoices).filter((invoice) => invoice.trip_id === tripId);
+  const invoicesForCategory = (category) =>
+    activeInvoices(invoices).filter((invoice) => invoice.expense_category === category && !invoice.trip_id);
 
   const handleUpload = async ({ event, expenseCategory, tripId = null, key }) => {
     const file = event.target.files?.[0];
@@ -436,12 +461,18 @@ export default function ReportEdit() {
             alignItems={{ sm: "center" }}
             justifyContent="space-between"
             spacing={1}
-            sx={{ px: 1.25, py: 1, border: `1px solid ${tokens.border}`, borderRadius: 2, bgcolor: "rgba(255,255,255,.66)" }}
+            sx={{
+              px: 1.25,
+              py: 1,
+              border: `1px solid ${invoice.amount_confirmed ? tokens.border : "rgba(245,158,11,.46)"}`,
+              borderRadius: 2,
+              bgcolor: invoice.amount_confirmed ? "rgba(255,255,255,.66)" : "rgba(255,251,235,.72)",
+            }}
           >
             <Box sx={{ minWidth: 0 }}>
               <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
                 <Typography variant="body2" fontWeight={800}>
-                  {formatAmount(invoice.amount)}
+                  {invoiceAmountLabel(invoice)}
                 </Typography>
                 <StatusPill status={invoice.amount_confirmed ? "reimbursed" : "pending"} label={invoice.amount_confirmed ? "已确认" : "待确认"} />
                 <StatusPill status="all" label={String(invoice.file_type || "").toUpperCase()} icon={false} />
@@ -610,6 +641,11 @@ export default function ReportEdit() {
               <GlassCard>
                 <Stack spacing={2}>
                   <SectionTitle title="费用明细" description="费用金额来自已确认发票；图片发票上传后需要手动确认金额" />
+                  {pendingInvoiceCount > 0 && (
+                    <Alert severity="warning" sx={{ borderRadius: 2 }}>
+                      {pendingInvoiceCount} 张发票待确认金额；费用明细已显示上传张数，金额确认后计入汇总。
+                    </Alert>
+                  )}
                   <TableContainer sx={{ overflowX: "auto" }}>
                     <Table sx={{ minWidth: 880 }}>
                       <TableHead>
@@ -630,6 +666,7 @@ export default function ReportEdit() {
                             invoice_count: 0,
                           };
                           const uploadKey = `expense-${category.value}`;
+                          const invoiceSummary = summarizeInvoiceGroup(invoicesForCategory(category.value));
                           return (
                             <TableRow key={category.value} hover>
                               <TableCell>
@@ -639,9 +676,16 @@ export default function ReportEdit() {
                                 </Stack>
                               </TableCell>
                               <TableCell align="right">
-                                <Typography fontWeight={900}>{formatAmount(item.amount)}</Typography>
+                                <Typography fontWeight={900}>{formatAmount(invoiceSummary.amount)}</Typography>
                               </TableCell>
-                              <TableCell align="center">{item.invoice_count || 0} 张</TableCell>
+                              <TableCell align="center">
+                                <Stack alignItems="center" spacing={0.75}>
+                                  <Typography>{invoiceSummary.invoiceCount} 张</Typography>
+                                  {invoiceSummary.pendingCount > 0 && (
+                                    <StatusPill status="pending" label={`${invoiceSummary.pendingCount} 张待确认`} />
+                                  )}
+                                </Stack>
+                              </TableCell>
                               <TableCell>
                                 <TextField
                                   fullWidth
