@@ -5,7 +5,6 @@ import {
   Button,
   Card,
   CardContent,
-  Chip,
   CircularProgress,
   Divider,
   GlobalStyles,
@@ -24,47 +23,32 @@ import PrintIcon from "@mui/icons-material/Print";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { Link as RouterLink, useParams } from "react-router-dom";
 import { getReport, getReportPdfUrl, isStaticMode } from "../api/client";
+import StatusPill from "../components/ui/StatusPill";
+import { formatAmount, formatDate, toNumber } from "../utils/formatters";
+import { EXPENSE_CATEGORIES } from "../utils/reimbursementForm";
 
-const STATUS_META = {
-  draft: { label: "草稿", color: "default" },
-  printed: { label: "已打印", color: "info" },
-  reimbursed: { label: "已报销", color: "success" },
-};
-
-const EXPENSE_LABELS = [
-  ["luggage", "行李费"],
-  ["city_transport", "市内车费"],
-  ["accommodation", "住宿费"],
-  ["postal", "邮电费"],
-  ["no_sleeper_subsidy", "不买卧铺补贴"],
-  ["toll", "过路费"],
-  ["fuel_subsidy", "油补"],
-];
-
-const formatAmount = (value) =>
-  `¥${Number(value ?? 0).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
-const plainAmount = (value) => Number(value ?? 0).toFixed(2);
+const plainAmount = (value) => toNumber(value).toFixed(2);
 
 function PrintableReport({ report }) {
   const trips = [...(report.trips || [])].sort((a, b) => a.sort_order - b.sort_order).slice(0, 7);
   const expenseMap = new Map((report.expense_items || []).map((item) => [item.category, item]));
-  const transportTotal = trips.reduce((sum, trip) => sum + Number(trip.amount || 0), 0);
-  const transportCount = trips.reduce((sum, trip) => sum + Number(trip.invoice_count || 0), 0);
-  const otherTotal = EXPENSE_LABELS.reduce((sum, [key]) => sum + Number(expenseMap.get(key)?.amount || 0), 0);
-  const otherCount = EXPENSE_LABELS.reduce((sum, [key]) => sum + Number(expenseMap.get(key)?.invoice_count || 0), 0);
+  const transportTotal = trips.reduce((sum, trip) => sum + toNumber(trip.amount), 0);
+  const transportCount = trips.reduce((sum, trip) => sum + toNumber(trip.invoice_count), 0);
+  const otherTotal = EXPENSE_CATEGORIES.reduce((sum, item) => sum + toNumber(expenseMap.get(item.value)?.amount), 0);
+  const otherCount = EXPENSE_CATEGORIES.reduce((sum, item) => sum + toNumber(expenseMap.get(item.value)?.invoice_count), 0);
 
   return (
     <Box className="print-sheet" sx={{ bgcolor: "white", color: "#111827", p: 3, border: "1px solid #D9E1EA" }}>
       <Typography align="center" fontWeight={800} sx={{ fontSize: 28, letterSpacing: 0, mb: 2 }}>
         出差旅费报销单
       </Typography>
-      <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+      <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }} flexWrap="wrap" gap={1}>
         <Typography>部门：{report.department || ""}</Typography>
         <Typography>出差人：{report.employee_name || ""}</Typography>
-        <Typography>报销日期：{report.report_date || ""}</Typography>
+        <Typography>报销日期：{formatDate(report.report_date, "")}</Typography>
       </Stack>
       <Typography sx={{ mb: 1 }}>出差事由：{report.purpose || ""}</Typography>
+
       <Table size="small" className="print-table">
         <TableHead>
           <TableRow>
@@ -86,7 +70,7 @@ function PrintableReport({ report }) {
               </TableCell>
               <TableCell>{trip.transport || ""}</TableCell>
               <TableCell align="center">{trip.invoice_count || ""}</TableCell>
-              <TableCell align="right">{Number(trip.amount || 0) ? plainAmount(trip.amount) : ""}</TableCell>
+              <TableCell align="right">{toNumber(trip.amount) ? plainAmount(trip.amount) : ""}</TableCell>
             </TableRow>
           ))}
           {Array.from({ length: Math.max(0, 7 - trips.length) }).map((_, index) => (
@@ -99,7 +83,9 @@ function PrintableReport({ report }) {
             </TableRow>
           ))}
           <TableRow>
-            <TableCell colSpan={3} align="center">合计</TableCell>
+            <TableCell colSpan={3} align="center">
+              合计
+            </TableCell>
             <TableCell align="center">{transportCount || ""}</TableCell>
             <TableCell align="right">{transportTotal ? plainAmount(transportTotal) : ""}</TableCell>
           </TableRow>
@@ -118,23 +104,25 @@ function PrintableReport({ report }) {
           </TableRow>
         </TableHead>
         <TableBody>
-          {EXPENSE_LABELS.slice(0, 4).map(([key, label], index) => {
-            const right = EXPENSE_LABELS[index + 4];
-            const leftItem = expenseMap.get(key);
-            const rightItem = right ? expenseMap.get(right[0]) : null;
+          {EXPENSE_CATEGORIES.slice(0, 4).map((left, index) => {
+            const right = EXPENSE_CATEGORIES[index + 4];
+            const leftItem = expenseMap.get(left.value);
+            const rightItem = right ? expenseMap.get(right.value) : null;
             return (
-              <TableRow key={key}>
-                <TableCell>{label}</TableCell>
+              <TableRow key={left.value}>
+                <TableCell>{left.label}</TableCell>
                 <TableCell align="center">{leftItem?.invoice_count || ""}</TableCell>
-                <TableCell align="right">{Number(leftItem?.amount || 0) ? plainAmount(leftItem.amount) : ""}</TableCell>
-                <TableCell>{right?.[1] || ""}</TableCell>
+                <TableCell align="right">{toNumber(leftItem?.amount) ? plainAmount(leftItem.amount) : ""}</TableCell>
+                <TableCell>{right?.label || ""}</TableCell>
                 <TableCell align="center">{rightItem?.invoice_count || ""}</TableCell>
-                <TableCell align="right">{Number(rightItem?.amount || 0) ? plainAmount(rightItem.amount) : ""}</TableCell>
+                <TableCell align="right">{toNumber(rightItem?.amount) ? plainAmount(rightItem.amount) : ""}</TableCell>
               </TableRow>
             );
           })}
           <TableRow>
-            <TableCell colSpan={4} align="center">其他费用合计</TableCell>
+            <TableCell colSpan={4} align="center">
+              其他费用合计
+            </TableCell>
             <TableCell align="center">{otherCount || ""}</TableCell>
             <TableCell align="right">{otherTotal ? plainAmount(otherTotal) : ""}</TableCell>
           </TableRow>
@@ -145,7 +133,7 @@ function PrintableReport({ report }) {
       <Stack direction="row" justifyContent="space-between" flexWrap="wrap" gap={2}>
         <Typography>补贴天数：{report.subsidy_days || 0} 天</Typography>
         <Typography>途中补贴：{formatAmount(report.subsidy_total)}</Typography>
-        <Typography>预支旅费：{formatAmount(report.advance_amount)}</Typography>
+        <Typography>预借旅费：{formatAmount(report.advance_amount)}</Typography>
         <Typography fontWeight={800}>报销总额：{formatAmount(report.total_amount)}</Typography>
       </Stack>
       <Stack direction="row" justifyContent="space-between" sx={{ mt: 3 }}>
@@ -187,8 +175,6 @@ export default function ReportPrint() {
     loadReport();
   }, [id]);
 
-  const meta = STATUS_META[report?.status] || { label: report?.status || "", color: "default" };
-
   return (
     <Stack spacing={3}>
       <GlobalStyles
@@ -201,18 +187,21 @@ export default function ReportPrint() {
           ".print-table td, .print-table th": { borderColor: "#111827" },
         }}
       />
+
       <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" alignItems={{ md: "center" }} gap={2}>
-        <Stack direction="row" spacing={1.5} alignItems="center">
+        <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
           <Button component={RouterLink} to="/reports" startIcon={<ArrowBackIcon />} variant="outlined">
-            返回
+            返回列表
           </Button>
-          <Typography variant="h5" fontWeight={700}>打印预览</Typography>
-          {report && <Chip size="small" color={meta.color} label={meta.label} />}
+          <Typography variant="h5" fontWeight={700}>
+            打印预览
+          </Typography>
+          {report && <StatusPill status={report.status} />}
         </Stack>
         <Stack direction="row" spacing={1} flexWrap="wrap">
           {isStaticMode ? (
             <Button startIcon={<PrintIcon />} variant="contained" onClick={() => window.print()}>
-              打印/另存PDF
+              打印/另存 PDF
             </Button>
           ) : (
             <>
@@ -243,9 +232,9 @@ export default function ReportPrint() {
           ) : (
             <Stack spacing={2}>
               <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                <Typography color="text.secondary">报销日期：{report?.report_date || "—"}</Typography>
-                <Typography color="text.secondary">出差人：{report?.employee_name || "—"}</Typography>
-                <Typography color="text.secondary">报销总额：{formatAmount(report?.total_amount)}</Typography>
+                <Typography color="text.secondary">报销日期：{formatDate(report.report_date, "—")}</Typography>
+                <Typography color="text.secondary">出差人：{report.employee_name || "—"}</Typography>
+                <Typography color="text.secondary">报销总额：{formatAmount(report.total_amount)}</Typography>
               </Stack>
               {isStaticMode ? (
                 <PrintableReport report={report} />

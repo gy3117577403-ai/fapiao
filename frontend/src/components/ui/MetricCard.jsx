@@ -6,6 +6,7 @@ import { tokens } from "../../theme";
 export default function MetricCard({
   title,
   value,
+  description,
   subtitle,
   trend,
   icon,
@@ -14,10 +15,23 @@ export default function MetricCard({
   decimals = 0,
   color = tokens.primary,
   loading = false,
+  selected = false,
   onClick,
+  sx,
 }) {
+  const helperText = description || subtitle;
   return (
-    <GlassCard hover interactive={Boolean(onClick)} loading={loading} onClick={onClick}>
+    <GlassCard
+      hover
+      interactive={Boolean(onClick)}
+      loading={loading}
+      onClick={onClick}
+      sx={{
+        borderColor: selected ? "rgba(37,99,235,.34)" : undefined,
+        bgcolor: selected ? "rgba(239,246,255,.88)" : undefined,
+        ...sx,
+      }}
+    >
       <Stack spacing={1.5}>
         <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
           <Box>
@@ -45,7 +59,7 @@ export default function MetricCard({
         </Stack>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Typography variant="body2" color="text.secondary">
-            {subtitle}
+            {helperText}
           </Typography>
           {trend && (
             <Typography variant="caption" sx={{ color, fontWeight: 800 }}>

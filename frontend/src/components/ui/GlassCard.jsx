@@ -1,9 +1,19 @@
 import { Box, Card, CardContent, Skeleton } from "@mui/material";
 import { glassSurface } from "../../theme";
 
-export default function GlassCard({ children, hover = false, interactive = false, loading = false, sx, contentSx, ...props }) {
+export default function GlassCard({
+  children,
+  hover = false,
+  interactive = false,
+  loading = false,
+  className,
+  sx,
+  contentSx,
+  ...props
+}) {
   return (
     <Card
+      className={className}
       {...props}
       sx={{
         ...glassSurface,
@@ -20,6 +30,12 @@ export default function GlassCard({ children, hover = false, interactive = false
             }
           : {}),
         ...(interactive ? { cursor: "pointer" } : {}),
+        "@media (prefers-reduced-motion: reduce)": {
+          transition: "none",
+          "&:hover": {
+            transform: "none",
+          },
+        },
         ...sx,
       }}
     >

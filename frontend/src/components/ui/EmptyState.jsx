@@ -2,8 +2,19 @@ import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import { Box, Button, Stack, Typography } from "@mui/material";
 import { tokens } from "../../theme";
 
-export default function EmptyState({ title, description, actionLabel, onAction, actionTo, actionComponent, icon, compact = false }) {
+export default function EmptyState({
+  title,
+  description,
+  actionText,
+  actionLabel,
+  onAction,
+  actionTo,
+  actionComponent,
+  icon,
+  compact = false,
+}) {
   const ActionComponent = actionComponent;
+  const action = actionText || actionLabel;
   return (
     <Stack alignItems="center" justifyContent="center" spacing={1.5} sx={{ py: compact ? 3 : 5, px: 2, textAlign: "center" }}>
       <Box
@@ -17,6 +28,7 @@ export default function EmptyState({ title, description, actionLabel, onAction, 
           bgcolor: tokens.primarySoft,
           border: `1px solid ${tokens.border}`,
           boxShadow: "inset 0 1px 0 rgba(255,255,255,.9)",
+          "& svg": { fontSize: compact ? 22 : 28 },
         }}
       >
         {icon || <AddCircleOutlineIcon />}
@@ -29,7 +41,7 @@ export default function EmptyState({ title, description, actionLabel, onAction, 
           {description}
         </Typography>
       )}
-      {actionLabel && (
+      {action && (
         <Button
           component={ActionComponent}
           to={actionTo}
@@ -38,7 +50,7 @@ export default function EmptyState({ title, description, actionLabel, onAction, 
           onClick={onAction}
           sx={{ mt: 0.5 }}
         >
-          {actionLabel}
+          {action}
         </Button>
       )}
     </Stack>

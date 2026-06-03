@@ -15,6 +15,9 @@ export const tokens = {
   info: "#0284c7",
 };
 
+export const pageBackground =
+  "radial-gradient(circle at 16% 8%, rgba(37,99,235,.14), transparent 28%), radial-gradient(circle at 86% 10%, rgba(2,132,199,.12), transparent 26%), radial-gradient(circle at 70% 92%, rgba(22,163,74,.08), transparent 24%), linear-gradient(135deg, #fbfdff 0%, #f7faff 42%, #eef5ff 100%)";
+
 export const glassSurface = {
   background: "rgba(255, 255, 255, 0.86)",
   backdropFilter: "blur(18px)",
@@ -63,6 +66,7 @@ export const theme = createTheme({
         body: {
           fontVariantNumeric: "tabular-nums",
           background: tokens.pageBg,
+          color: tokens.navy,
         },
         "*": {
           boxSizing: "border-box",
@@ -121,9 +125,16 @@ export const theme = createTheme({
           "&.Mui-focused": {
             boxShadow: "0 0 0 4px rgba(37,99,235,.12)",
           },
+          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+            borderColor: tokens.primary,
+            borderWidth: 1,
+          },
         },
         notchedOutline: {
           borderColor: tokens.border,
+        },
+        input: {
+          fontVariantNumeric: "tabular-nums",
         },
       },
     },

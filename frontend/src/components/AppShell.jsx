@@ -12,7 +12,7 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import SettingsIcon from "@mui/icons-material/Settings";
 import { Link as RouterLink, useLocation } from "react-router-dom";
-import { tokens } from "../theme";
+import { pageBackground, tokens } from "../theme";
 
 const navItems = [
   { label: "总览驾驶舱", to: "/", icon: <DashboardIcon fontSize="small" /> },
@@ -39,10 +39,24 @@ function NavButton({ item, active, compact }) {
         minWidth: compact ? 40 : "auto",
         minHeight: compact ? 40 : 44,
         px: compact ? 1 : 1.5,
+        position: "relative",
         color: active ? tokens.primaryDeep : tokens.muted,
         bgcolor: active ? "rgba(37,99,235,.1)" : "transparent",
         border: active ? "1px solid rgba(37,99,235,.22)" : "1px solid transparent",
         boxShadow: active ? "inset 0 1px 0 rgba(255,255,255,.7)" : "none",
+        "&::before": compact
+          ? undefined
+          : {
+              content: '""',
+              position: "absolute",
+              left: 8,
+              top: 10,
+              bottom: 10,
+              width: 3,
+              borderRadius: 999,
+              bgcolor: active ? tokens.primary : "transparent",
+            },
+        "& .MuiButton-startIcon": { ml: compact ? 0 : 1 },
         "&:hover": { bgcolor: active ? "rgba(37,99,235,.12)" : "rgba(255,255,255,.62)" },
       }}
     >
@@ -61,8 +75,7 @@ export default function AppShell({ children }) {
         minHeight: "100vh",
         display: "flex",
         color: tokens.navy,
-        background:
-          "radial-gradient(circle at 18% 8%, rgba(37,99,235,.16), transparent 26%), radial-gradient(circle at 84% 12%, rgba(2,132,199,.12), transparent 24%), linear-gradient(135deg, #f8fbff 0%, #f5f7fb 45%, #eef4ff 100%)",
+        background: pageBackground,
       }}
     >
       {!compact && (
@@ -77,6 +90,7 @@ export default function AppShell({ children }) {
             borderRight: `1px solid ${tokens.border}`,
             background: "rgba(255,255,255,.72)",
             backdropFilter: "blur(22px)",
+            boxShadow: "inset -1px 0 0 rgba(255,255,255,.72)",
             position: "sticky",
             top: 0,
             height: "100vh",
@@ -96,7 +110,13 @@ export default function AppShell({ children }) {
             ))}
           </Stack>
           <Divider />
-          <Button component={RouterLink} to="/reports/new" variant="contained" startIcon={<AddCircleOutlineIcon />} sx={{ minHeight: 42 }}>
+          <Button
+            component={RouterLink}
+            to="/reports/new"
+            variant="contained"
+            startIcon={<AddCircleOutlineIcon />}
+            sx={{ minHeight: 40, boxShadow: "0 10px 24px rgba(37,99,235,.2)" }}
+          >
             新建报销单
           </Button>
           <Box sx={{ mt: "auto", p: 1.5, borderRadius: 3, bgcolor: "rgba(37,99,235,.08)", border: `1px solid ${tokens.border}` }}>

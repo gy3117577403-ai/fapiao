@@ -28,6 +28,12 @@ Thumbs.db
 # Frontend dependencies
 node_modules/
 
+# Local frontend environment files
+.env.local
+.env.*.local
+frontend/.env.local
+frontend/.env.*.local
+
 # Local SQLite data
 data/*.db
 
